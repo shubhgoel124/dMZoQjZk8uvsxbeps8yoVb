@@ -1,34 +1,32 @@
-import Message from "../models/Message.js";
-import User from "../models/User.js";
+import Message from "../models/Message.js"
+import User from "../models/User.js"
 import cloudinary from "../lib/cloudinary.js"
-import { io, userSocketMap } from "../server.js";
-
+import { io, userSocketMap } from "../server.js"
 
 export const getUsersForSidebar = async (req, res)=>{
     try {
-        const userId = req.user._id;
-        const filteredUsers = await User.find({_id: {$ne: userId}}).select("-password");
+        let userId = req.user._id
+        const filteredUsers = await User.find({_id: {$ne: userId}}).select("-password")
 
-        const unseenMessages = {}
-        const promises = filteredUsers.map(async (user)=>{
-            const messages = await Message.find({senderId: user._id, receiverId: userId, seen: false})
+        var unseenMessages = {}
+        let promises = filteredUsers.map(async (user)=>{
+            let messages = await Message.find({senderId: user._id, receiverId: userId, seen: false})
             if(messages.length > 0){
-                unseenMessages[user._id] = messages.length;
+                unseenMessages[user._id] = messages.length
             }
         })
-        await Promise.all(promises);
+        await Promise.all(promises)
         res.json({success: true, users: filteredUsers, unseenMessages})
     } catch (error) {
-        console.log(error.message);
+        console.log(error.message)
         res.json({success: false, message: error.message})
     }
 }
 
-// Get all messages for selected user
 export const getMessages = async (req, res) =>{
     try {
-        const { id: selectedUserId } = req.params;
-        const myId = req.user._id;
+        let { id: selectedUserId } = req.params
+        var myId = req.user._id
 
         const messages = await Message.find({
             $or: [
@@ -36,40 +34,36 @@ export const getMessages = async (req, res) =>{
                 {senderId: selectedUserId, receiverId: myId},
             ]
         })
-        await Message.updateMany({senderId: selectedUserId, receiverId: myId}, {seen: true});
+        await Message.updateMany({senderId: selectedUserId, receiverId: myId}, {seen: true})
 
         res.json({success: true, messages})
-
-
     } catch (error) {
-        console.log(error.message);
+        console.log(error.message)
         res.json({success: false, message: error.message})
     }
 }
 
-// api to mark message as seen using message id
-export const markMessageAsSeen = async (req, res)=>{
+export let markMessageAsSeen = async (req, res)=>{
     try {
-        const { id } = req.params;
+        const { id } = req.params
         await Message.findByIdAndUpdate(id, {seen: true})
         res.json({success: true})
     } catch (error) {
-        console.log(error.message);
+        console.log(error.message)
         res.json({success: false, message: error.message})
     }
 }
 
-// Send message to selected user
 export const sendMessage = async (req, res) =>{
     try {
-        const {text, image} = req.body;
-        const receiverId = req.params.id;
-        const senderId = req.user._id;
+        let {text, image} = req.body
+        const receiverId = req.params.id
+        var senderId = req.user._id
 
-        let imageUrl;
+        let imageUrl
         if(image){
-            const uploadResponse = await cloudinary.uploader.upload(image)
-            imageUrl = uploadResponse.secure_url;
+            let uploadResponse = await cloudinary.uploader.upload(image)
+            imageUrl = uploadResponse.secure_url
         }
         const newMessage = await Message.create({
             senderId,
@@ -78,30 +72,28 @@ export const sendMessage = async (req, res) =>{
             image: imageUrl
         })
 
-        // Emit the new message to the receiver's socket
-        const receiverSocketId = userSocketMap[receiverId];
+        let receiverSocketId = userSocketMap[receiverId]
         if (receiverSocketId){
             io.to(receiverSocketId).emit("newMessage", newMessage)
         }
 
-        res.json({success: true, newMessage});
+        res.json({success: true, newMessage})
 
     } catch (error) {
-        console.log(error.message);
+        console.log(error.message)
         res.json({success: false, message: error.message})
     }
 }
 
-// Send a global message accessible to everyone in the global room
 export const sendGlobalMessage = async (req, res) => {
     try {
-        const { text, image } = req.body;
-        const senderId = req.user._id;
+        let { text, image } = req.body
+        var senderId = req.user._id
 
-        let imageUrl;
+        let imageUrl
         if (image) {
-            const uploadResponse = await cloudinary.uploader.upload(image)
-            imageUrl = uploadResponse.secure_url;
+            let uploadResponse = await cloudinary.uploader.upload(image)
+            imageUrl = uploadResponse.secure_url
         }
 
         const newMessage = await Message.create({
@@ -109,24 +101,23 @@ export const sendGlobalMessage = async (req, res) => {
             text,
             image: imageUrl,
             isGlobal: true
-        });
+        })
 
-        // Emit to global room
-        io.to("globalRoom").emit("newGlobalMessage", newMessage);
+        io.to("globalRoom").emit("newGlobalMessage", newMessage)
 
-        res.json({ success: true, newMessage });
+        res.json({ success: true, newMessage })
     } catch (error) {
-        console.log(error.message);
-        res.json({ success: false, message: error.message });
+        console.log(error.message)
+        res.json({ success: false, message: error.message })
     }
 }
 
-export const getGlobalMessages = async (req, res) => {
+export let getGlobalMessages = async (req, res) => {
     try {
-        const messages = await Message.find({ isGlobal: true }).sort({ createdAt: 1 }).limit(50);
-        res.json({ success: true, messages });
+        const messages = await Message.find({ isGlobal: true }).sort({ createdAt: 1 }).limit(50)
+        res.json({ success: true, messages })
     } catch (error) {
-        console.log(error.message);
-        res.json({ success: false, message: error.message });
+        console.log(error.message)
+        res.json({ success: false, message: error.message })
     }
 }

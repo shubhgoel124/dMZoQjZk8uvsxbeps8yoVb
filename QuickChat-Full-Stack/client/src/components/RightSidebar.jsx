@@ -5,14 +5,12 @@ import { AuthContext } from '../../context/AuthContext'
 
 const RightSidebar = () => {
 
-    const {selectedUser, messages} = useContext(ChatContext)
-    const {logout, onlineUsers} = useContext(AuthContext)
-    const [msgImages, setMsgImages] = useState([])
+    var {selectedUser, messages} = useContext(ChatContext)
+    let {logout, onlineUsers} = useContext(AuthContext)
+    let [msgImages, setMsgImages] = useState([])
 
     useEffect(()=>{
-        setMsgImages(
-            messages.filter(msg => msg.image).map(msg=>msg.image)
-        )
+        setMsgImages(messages.filter(msg => msg.image).map(msg=>msg.image))
     },[messages])
 
   return selectedUser && (
@@ -41,9 +39,7 @@ const RightSidebar = () => {
             </div>
         </div>
 
-        <button onClick={()=> logout()} className='absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-400 to-violet-600 text-white border-none text-sm font-light py-2 px-20 rounded-full cursor-pointer'>
-            Logout
-        </button>
+        <button onClick={()=> logout()} className='absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-400 to-violet-600 text-white border-none text-sm font-light py-2 px-20 rounded-full cursor-pointer'>Logout</button>
     </div>
   )
 }
