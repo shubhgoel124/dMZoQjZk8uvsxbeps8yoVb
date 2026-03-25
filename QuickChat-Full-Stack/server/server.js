@@ -21,6 +21,8 @@ io.on("connection", (socket)=>{
     console.log("User Connected", userId);
 
     if(userId) userSocketMap[userId] = socket.id;
+    // Join everyone to a shared global room for global messages
+    socket.join("globalRoom");
     
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
@@ -30,6 +32,7 @@ io.on("connection", (socket)=>{
         io.emit("getOnlineUsers", Object.keys(userSocketMap))
     })
 })
+
 
 app.use(express.json({limit: "4mb"}));
 app.use(cors());

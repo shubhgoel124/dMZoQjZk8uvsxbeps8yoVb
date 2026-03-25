@@ -91,3 +91,42 @@ export const sendMessage = async (req, res) =>{
         res.json({success: false, message: error.message})
     }
 }
+
+// Send a global message accessible to everyone in the global room
+export const sendGlobalMessage = async (req, res) => {
+    try {
+        const { text, image } = req.body;
+        const senderId = req.user._id;
+
+        let imageUrl;
+        if (image) {
+            const uploadResponse = await cloudinary.uploader.upload(image)
+            imageUrl = uploadResponse.secure_url;
+        }
+
+        const newMessage = await Message.create({
+            senderId,
+            text,
+            image: imageUrl,
+            isGlobal: true
+        });
+
+        // Emit to global room
+        io.to("globalRoom").emit("newGlobalMessage", newMessage);
+
+        res.json({ success: true, newMessage });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+}
+
+export const getGlobalMessages = async (req, res) => {
+    try {
+        const messages = await Message.find({ isGlobal: true }).sort({ createdAt: 1 }).limit(50);
+        res.json({ success: true, messages });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+}
