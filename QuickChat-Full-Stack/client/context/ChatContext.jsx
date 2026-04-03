@@ -12,7 +12,7 @@ export const ChatProvider = ({ children }) => {
     const [activeChatUser, setActiveChatUser] = useState(null)
     const [unreadCounts, setUnreadCounts] = useState({})
 
-  const { socket, axios } = useContext(AuthContext)
+    const { socket, axios, authUser } = useContext(AuthContext)
 
     const fetchContacts = async () => {
     try {
@@ -94,7 +94,8 @@ export const ChatProvider = ({ children }) => {
         }
 
         const onGlobal = (msg) => {
-            let isGlob = activeChatUser != null && activeChatUser._id == 'global'
+            if (authUser && msg.senderId === authUser._id) return;
+            let isGlob = activeChatUser != null && activeChatUser._id === 'global'
             if (isGlob) {
                 setChatHistory((old) => [...old, msg])
             } else {

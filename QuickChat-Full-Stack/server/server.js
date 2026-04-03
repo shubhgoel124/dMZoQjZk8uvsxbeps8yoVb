@@ -1,8 +1,13 @@
+import * as buffer from "buffer";
+if (!buffer.default.SlowBuffer) {
+    buffer.default.SlowBuffer = buffer.default.Buffer;
+}
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import http from "http";
 import { connectDB } from "./lib/db.js";
+import User from "./models/User.js";
 import userRouter from "./routes/userRoutes.js";
 import messageRouter from "./routes/messageRoutes.js";
 import { Server } from "socket.io";
@@ -23,10 +28,13 @@ io.on("connection", (socket)=>{
     
     io.emit("getOnlineUsers", Object.keys(userSocketMap))
 
-    socket.on("disconnect", ()=>{
+    socket.on("disconnect", async ()=>{
         console.log("User Disconnected", userId)
         delete userSocketMap[userId]
         io.emit("getOnlineUsers", Object.keys(userSocketMap))
+        if(userId) {
+            await User.findByIdAndUpdate(userId, {lastSeen: new Date()}).catch(err => console.log(err));
+        }
     })
 })
 

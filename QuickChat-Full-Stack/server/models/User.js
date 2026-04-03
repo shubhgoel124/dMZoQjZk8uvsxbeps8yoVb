@@ -6,6 +6,7 @@ var userSchema = new mongoose.Schema({
     password: {type: String, required: true, minlength: 6},
     profilePic: {type: String, default: ""},
     bio: {type: String},
+    lastSeen: {type: Date},
 }, {timestamps: true})
 
 let User = mongoose.model("User", userSchema)
