@@ -7,6 +7,11 @@ var userSchema = new mongoose.Schema({
     profilePic: {type: String, default: ""},
     bio: {type: String},
     lastSeen: {type: Date},
+    resetPasswordOTP: {type: String},
+    resetPasswordExpires: {type: Date},
+    signupOTP: {type: String},
+    signupOTPExpires: {type: Date},
+    isVerified: {type: Boolean, default: false},
 }, {timestamps: true})
 
 let User = mongoose.model("User", userSchema)

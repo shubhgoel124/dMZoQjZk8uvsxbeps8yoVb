@@ -8,19 +8,53 @@ const LoginPage = () => {
   let [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [bio, setBio] = useState("")
+  const [otp, setOtp] = useState("")
+  const [signupOTP, setSignupOTP] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [signupStep, setSignupStep] = useState(1)
   let [isDataSubmitted, setIsDataSubmitted] = useState(false)
 
-  const {login} = useContext(AuthContext)
+  const {login, requestOTP, submitResetPassword, sendSignupOTP, verifySignupOTP} = useContext(AuthContext)
 
-  const onSubmitHandler = (event)=>{
+  const onSubmitHandler = async (event)=>{
     event.preventDefault()
 
-    if(currState == 'Sign up' && !isDataSubmitted){
-      setIsDataSubmitted(true)
-      return
+    if (currState === "Forgot Password") {
+      let success = await requestOTP(email);
+      if (success) setCurrState("Reset Password");
+      return;
     }
 
-    login(currState == "Sign up" ? 'signup' : 'login', {fullName, email, password, bio})
+    if (currState === "Reset Password") {
+      let success = await submitResetPassword(email, otp, newPassword);
+      if (success) {
+        setCurrState("Login");
+        setOtp("");
+        setNewPassword("");
+      }
+      return;
+    }
+
+    if(currState == 'Sign up'){
+      if (signupStep === 1) {
+        const success = await sendSignupOTP(email, fullName);
+        if (success) setSignupStep(2);
+        return;
+      }
+      if (signupStep === 2) {
+        const success = await verifySignupOTP(email, signupOTP);
+        if (success) setSignupStep(3);
+        return;
+      }
+      if (signupStep === 3) {
+        setSignupStep(4);
+        return;
+      }
+      // Step 4 is final submission
+      login('signup', {fullName, email, password, bio})
+    } else {
+      login('login', {fullName, email, password, bio})
+    }
   }
 
   return (
@@ -34,36 +68,73 @@ const LoginPage = () => {
           {isDataSubmitted && <img onClick={()=> setIsDataSubmitted(false)} src={assets.arrow_icon} alt="" className='w-5 cursor-pointer'/> }
          </h2>
 
-        {currState == "Sign up" && !isDataSubmitted && (
-          <input onChange={(e)=>setFullName(e.target.value)} value={fullName} type="text" className='p-2 border border-gray-500 rounded-md focus:outline-none' placeholder="Full Name" required/>
+        {currState === "Sign up" && (
+            <div className="flex justify-center items-center gap-2 mb-4">
+               {[1,2,3,4].map((step) => (
+                   <div key={step} className={`w-3 h-3 rounded-full ${signupStep >= step ? 'bg-violet-500' : 'bg-gray-600'}`}></div>
+               ))}
+            </div>
         )}
 
-        {!isDataSubmitted && (
-          <>
-          <input onChange={(e)=>setEmail(e.target.value)} value={email} type="email" placeholder='Email Address' required className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'/>
-          <input onChange={(e)=>setPassword(e.target.value)} value={password} type="password" placeholder='Password' required className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'/>
-          </>
+        {currState === "Sign up" && signupStep === 1 && (
+            <>
+                <input onChange={(e)=>setFullName(e.target.value)} value={fullName} type="text" className='p-2 border border-gray-500 rounded-md focus:outline-none' placeholder="Full Name" required/>
+                <input onChange={(e)=>setEmail(e.target.value)} value={email} type="email" placeholder='Email Address' required className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'/>
+            </>
         )}
 
-        {currState == "Sign up" && isDataSubmitted && (
+        {currState === "Sign up" && signupStep === 2 && (
+            <div className="flex flex-col gap-2">
+                <p className="text-center text-sm text-gray-400 font-medium">OTP sent to <span className="text-violet-400">{email}</span></p>
+                <p className="text-center text-xs text-gray-500 mb-2">Check your inbox/spam</p>
+                <input onChange={(e)=>setSignupOTP(e.target.value)} value={signupOTP} type="text" placeholder='Enter OTP' required className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center tracking-[0.5em] text-lg font-bold'/>
+            </div>
+        )}
+
+        {currState === "Sign up" && signupStep === 3 && (
+            <input onChange={(e)=>setPassword(e.target.value)} value={password} type="password" placeholder='Set Password' required className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'/>
+        )}
+
+        {currState === "Sign up" && signupStep === 4 && (
             <textarea onChange={(e)=>setBio(e.target.value)} value={bio} rows={4} className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500' placeholder='provide a short bio...' required></textarea>
-          )
-        }
+        )}
 
-        <button type='submit' className='py-3 bg-gradient-to-r from-purple-400 to-violet-600 text-white rounded-md cursor-pointer'>
-          {currState == "Sign up" ? "Create Account" : "Login Now"}
+        {currState === "Login" && (
+           <>
+            <input onChange={(e)=>setEmail(e.target.value)} value={email} type="email" placeholder='Email Address' required className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'/>
+            <input onChange={(e)=>setPassword(e.target.value)} value={password} type="password" placeholder='Password' required className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'/>
+            <p onClick={() => setCurrState("Forgot Password")} className='text-sm text-violet-400 cursor-pointer hover:underline -mt-4'>Forgot Password?</p>
+           </>
+        )}
+
+        {currState === "Reset Password" && (
+           <>
+            <p className="text-center text-sm text-gray-400 font-medium mb-2">OTP sent to <span className="text-violet-400">{email}</span></p>
+            <input onChange={(e)=>setOtp(e.target.value)} value={otp} type="text" placeholder='Enter 6-digit OTP' required className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center tracking-[0.5em] text-lg font-bold'/>
+            <input onChange={(e)=>setNewPassword(e.target.value)} value={newPassword} type="password" placeholder='New Password' required className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'/>
+           </>
+        )}
+
+        {currState === "Forgot Password" && (
+            <input onChange={(e)=>setEmail(e.target.value)} value={email} type="email" placeholder='Email Address' required className='p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'/>
+        )}
+
+        <button type='submit' className='py-3 bg-gradient-to-r from-purple-400 to-violet-600 text-white rounded-md cursor-pointer transition-all hover:scale-105 active:scale-95'>
+          {currState == "Sign up" ? (signupStep < 4 ? (signupStep === 2 ? "Verify" : "Next") : "Create Account") : currState == "Forgot Password" ? "Send OTP" : currState == "Reset Password" ? "Verify & Reset" : "Login Now"}
         </button>
 
-        <div className='flex items-center gap-2 text-sm text-gray-500'>
-          <input type="checkbox" />
-          <p>Agree to the terms of use & privacy policy.</p>
-        </div>
+        {currState === "Login" && (
+          <div className='flex items-center gap-2 text-sm text-gray-500'>
+            <input type="checkbox" />
+            <p>Agree to the terms of use & privacy policy.</p>
+          </div>
+        )}
 
         <div className='flex flex-col gap-2'>
           {currState == "Sign up" ? (
-            <p className='text-sm text-gray-600'>Already have an account? <span onClick={()=>{setCurrState("Login"); setIsDataSubmitted(false)}} className='font-medium text-violet-500 cursor-pointer'>Login here</span></p>
+            <p className='text-sm text-gray-600 text-center'>Already have an account? <span onClick={()=>{setCurrState("Login"); setSignupStep(1)}} className='font-medium text-violet-500 cursor-pointer'>Login here</span></p>
           ) : (
-            <p className='text-sm text-gray-600'>Create an account <span onClick={()=> setCurrState("Sign up")} className='font-medium text-violet-500 cursor-pointer'>Click here</span></p>
+            <p className='text-sm text-gray-600 text-center'>{(currState === "Forgot Password" || currState === "Reset Password") ? "Remember your password?" : "Create an account"} <span onClick={()=> {setCurrState(currState === "Login" ? "Sign up" : "Login"); setSignupStep(1)}} className='font-medium text-violet-500 cursor-pointer'>{currState === "Login" ? "Click here" : "Login here"}</span></p>
           )}
         </div>
       </form>

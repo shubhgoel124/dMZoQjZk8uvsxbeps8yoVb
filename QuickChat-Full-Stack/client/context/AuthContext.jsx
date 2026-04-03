@@ -68,6 +68,70 @@ const login = async (state, credentials)=>{
         }
     }
 
+    const requestOTP = async (email) => {
+        try {
+            let res = await axios.post("/api/auth/forgot-password", { email });
+            if (res.data.success) {
+                toast.success(res.data.message);
+                return true;
+            } else {
+                toast.error(res.data.message);
+                return false;
+            }
+        } catch (error) {
+            toast.error(error.message);
+            return false;
+        }
+    };
+
+    const submitResetPassword = async (email, otp, newPassword) => {
+        try {
+            let res = await axios.post("/api/auth/reset-password", { email, otp, newPassword });
+            if (res.data.success) {
+                toast.success(res.data.message);
+                return true;
+            } else {
+                toast.error(res.data.message);
+                return false;
+            }
+        } catch (error) {
+            toast.error(error.message);
+            return false;
+        }
+    };
+
+    const sendSignupOTP = async (email, fullName) => {
+        try {
+            let res = await axios.post("/api/auth/send-signup-otp", { email, fullName });
+            if (res.data.success) {
+                toast.success(res.data.message);
+                return true;
+            } else {
+                toast.error(res.data.message);
+                return false;
+            }
+        } catch (error) {
+            toast.error(error.message);
+            return false;
+        }
+    };
+
+    const verifySignupOTP = async (email, otp) => {
+        try {
+            let res = await axios.post("/api/auth/verify-signup-otp", { email, otp });
+            if (res.data.success) {
+                toast.success(res.data.message);
+                return true;
+            } else {
+                toast.error(res.data.message);
+                return false;
+            }
+        } catch (error) {
+            toast.error(error.message);
+            return false;
+        }
+    };
+
     const connectSocket = (userData)=>{
         if(!userData) return
         if(socket?.connected) return
@@ -91,7 +155,7 @@ const login = async (state, credentials)=>{
         checkAuth()
     },[])
 
-    const value = { axios, authUser, onlineUsers, socket, login, logout, updateProfile }
+    const value = { axios, authUser, onlineUsers, socket, login, logout, updateProfile, requestOTP, submitResetPassword, sendSignupOTP, verifySignupOTP }
 
     return (
         <AuthContext.Provider value={value}>
